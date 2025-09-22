@@ -106,8 +106,8 @@ Ki = 40;
 Kd = 5;
 C_pid = pid(Kd, Kp, Ki);  % PID controller
 T_pid = feedback(C_pid*G, 1);
-t = 0:0.00001:.0025;
-[y_pid, t_pid] = step(T_pid, t);
+t_pid = 0:0.01:.05;
+[y_pid, t_pid] = step(T_pid, t_pid);
 
 plot(t_pid, y_pid, 'r-', 'LineWidth', 2);
 grid on;
@@ -125,15 +125,16 @@ fprintf('- Derivative term provides damping\n\n');
 figure(2);
 set(gcf, 'Position', [150, 150, 1000, 600]);
 
+% Try different PID combinations to optimize response
+% Target: Fast settling time, low overshoot, zero steady-state error
 
-% Optimized values (
+% Optimized values (you may need to tune these)
 Kp_opt = 15;
-Ki_opt = 45;  
-Kd_opt = 10;
+Ki_opt = 25;  
+Kd_opt = 3;
 
-C_opt_pid = pid(Kp_opt, Ki_opt, Kd_opt);
-tf(C_opt_pid);
-T_opt = feedback(C_opt_pid*G, 1);
+C_opt = tf([Kd_opt, Kp_opt, Ki_opt], [1, 0]);
+T_opt = feedback(C_opt*G, 1);
 
 % Extended time for settling time analysis
 t_long = 0:0.001:5;
@@ -145,13 +146,13 @@ settling_time = step_info.SettlingTime;
 overshoot = step_info.Overshoot;
 steady_state_value = dcgain(T_opt);
 steady_state_error = abs(1 - steady_state_value);
-fprintf('steady_state_value, %.2f', steady_state_value); 
+
 % Plot optimized response
 plot(t_opt, y_opt, 'b-', 'LineWidth', 2);
 hold on;
 
 % Add reference line
-plot([0, t_long(end)], [1, 1], 'g--', 'LineWidth', 1);
+plot([0, t_long(end)], [1, 1], 'k--', 'LineWidth', 1);
 
 % Add settling time bounds (2% of final value)
 final_value = y_opt(end);
@@ -159,6 +160,11 @@ upper_bound = final_value * 1.02;
 lower_bound = final_value * 0.98;
 plot([0, t_long(end)], [upper_bound, upper_bound], 'r--', 'LineWidth', 1);
 plot([0, t_long(end)], [lower_bound, lower_bound], 'r--', 'LineWidth', 1);
+
+% Mark settling time
+if settling_time <= t_long(end)
+    line([settling_time, settling_time], [0, final_value], 'Color', 'g', 'LineWidth', 2);
+end
 
 grid on;
 title(sprintf('Optimized PID Response - Dylan Qiu\nKp=%.1f, Ki=%.1f, Kd=%.1f', ...
@@ -173,12 +179,17 @@ fprintf('Selected gains: Kp = %.1f, Ki = %.1f, Kd = %.1f\n', Kp_opt, Ki_opt, Kd_
 fprintf('Performance Specifications:\n');
 fprintf('  i.  Settling Time (2%%): %.3f seconds\n', settling_time);
 fprintf('  ii. Overshoot: %.2f%%\n', overshoot);
-fprintf('  iii.Steady-State Error: %.3f\n', steady_state_error);
+fprintf('  iii.Steady-State Error: %.6f\n', steady_state_error);
+fprintf('\nRationale for gain selection:\n');
+fprintf('- Kp increased to improve speed of response\n');
+fprintf('- Ki maintained to eliminate steady-state error\n');
+fprintf('- Kd tuned to minimize overshoot while maintaining fast response\n');
+fprintf('- Balance achieved between settling time and overshoot\n');
 
 % Add text annotations on the plot
 text_x = t_long(end)*0.6;
 text_y = final_value*0.7;
-text(text_x, text_y, sprintf('Settling Time: %.3fs\nOvershoot: %.2f%%\nSS Error: %.3f', ...
+text(text_x, text_y, sprintf('Settling Time: %.3fs\nOvershoot: %.2f%%\nSS Error: %.6f', ...
     settling_time, overshoot, steady_state_error), ...
-    'FontSize', 10, 'BackgroundColor', 'black', 'EdgeColor', 'black');
+    'FontSize', 10, 'BackgroundColor', 'white', 'EdgeColor', 'black');
 
