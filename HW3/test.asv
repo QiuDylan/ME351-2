@@ -1,0 +1,225 @@
+%% ME351 HW3 - Complete Solutions for Problems 1-5
+% Root Locus Analysis and Design
+
+fprintf('PROBLEM 5:');
+
+% Given parameters
+R = 8.4;                    % Resistance (Ohms)
+L = 0.00116;                % Inductance (H)
+Jm = 4.65e-6;               % Motor inertia (kg-m^2)
+Km = 0.042;                 % Motor torque constant (N-m/A)
+Kb = 0.042;                 % Back-EMF constant (V/(rad/s))
+B = 0.02;                   % Viscous damping (N-m-s)
+
+% Disc parameters
+m_disc = 0.053;             % Disc mass (kg)
+r_disc = 0.0248;            % Disc radius (m)
+Jd = 0.5 * m_disc * r_disc^2;  % Disc inertia (kg-m^2)
+
+% Total inertia
+J_total = Jm + Jd;
+
+% Transfer function coefficients
+a2 = L * J_total;
+a1 = R * J_total + L * B;
+a0 = R * B + Km * Kb;
+
+% Open-loop transfer function
+num5 = Km;
+den5 = [a2, a1, a0];
+G5 = tf(num5, den5);
+
+fprintf('Transfer Function G(s) = omega(s)/V(s):\n');
+disp(G5);
+
+% Open-loop poles
+poles5 = pole(G5);
+fprintf('Open-Loop Poles:\n');
+disp(poles5);
+
+% Design specifications
+tr_spec = 0.5e-3;           % Rise time <= 0.5 ms
+Mp_spec = 0.05;             % Overshoot <= 5%
+
+% Calculate requirements
+zeta_min = sqrt((log(Mp_spec))^2 / (pi^2 + (log(Mp_spec))^2));
+wn_min = 2.2 / (zeta_min * tr_spec);
+
+fprintf('\nDesign Requirements:\n');
+fprintf('Minimum damping ratio (zeta): %.4f\n', zeta_min);
+fprintf('Minimum natural frequency (wn): %.2f rad/s\n', wn_min);
+
+%% Part (a): Open sisotool with design requirements
+fprintf('\n--- Part (a): SISO Design Tool ---\n');
+
+controlSystemDesigner('rlocus', G5);
+
+fprintf('Instructions for Part (a):\n');
+fprintf('1. In Control System Designer window:\n');
+fprintf('2. Right-click on root locus plot\n');
+fprintf('3. Select "Design Requirements" -> "New..."\n');
+fprintf('4. Add requirements:\n');
+fprintf('   - Damping ratio >= %.4f (for Mp <= 5%%)\n', zeta_min);
+fprintf('   - Natural frequency >= %.2f rad/s (for tr <= 0.5 ms)\n', wn_min);
+fprintf('5. Shaded region shows acceptable pole locations\n');
+
+%% Part (b): Select gain to meet specifications
+fprintf('\n--- Part (b): Select Gain ---\n');
+fprintf('Drag the pink square on root locus to select K\n');
+fprintf('Place poles in shaded region\n');
+fprintf('Note gain K and closed-loop poles at bottom of window\n');
+
+% Example gain (replace with your selected value)
+K_b = 50;
+sys_cl_b = feedback(K_b * G5, 1);
+poles_cl_b = pole(sys_cl_b);
+
+fprintf('\nExample: K = %.2f\n', K_b);
+fprintf('Closed-loop poles:\n');
+disp(poles_cl_b);
+
+%% Part (c): Step response and steady-state error
+fprintf('\n--- Part (c): Step Response and Error ---\n');
+
+figure('Name', 'Problem 5c - Step Response', 'NumberTitle', 'off');
+step(sys_cl_b);
+grid on;
+title(sprintf('Closed-Loop Step Response (K = %.2f)', K_b));
+xlabel('Time (s)');
+ylabel('Angular Velocity (rad/s)');
+
+% Steady-state error
+Kp_b = K_b * dcgain(G5);
+ess_b = 1 / (1 + Kp_b);
+ess_percent_b = ess_b * 100;
+
+fprintf('Position constant Kp = %.4f\n', Kp_b);
+fprintf('Steady-state error = %.4f (%.2f%%)\n', ess_b, ess_percent_b);
+
+% Verify with FVT
+T_b = feedback(K_b * G5, 1);
+ess_fvt = 1 - dcgain(T_b);
+fprintf('Steady-state error (FVT) = %.4f (%.2f%%)\n', ess_fvt, ess_fvt*100);
+
+%% Part (d): Increase gain for 2% error
+fprintf('\n--- Part (d): Gain for 2%% Error ---\n');
+
+% Required gain
+K_d = (1/0.02 - 1) / dcgain(G5);
+fprintf('Required gain for 2%% error: K = %.2f\n', K_d);
+
+sys_cl_d = feedback(K_d * G5, 1);
+poles_cl_d = pole(sys_cl_d);
+
+fprintf('Closed-loop poles:\n');
+disp(poles_cl_d);
+
+figure('Name', 'Problem 5d - Higher Gain Response', 'NumberTitle', 'off');
+step(sys_cl_d);
+grid on;
+title(sprintf('Closed-Loop Step Response (K = %.2f, ess = 2%%)', K_d));
+xlabel('Time (s)');
+ylabel('Angular Velocity (rad/s)');
+
+% Check specifications
+S_d = stepinfo(sys_cl_d);
+fprintf('\nStep response characteristics:\n');
+fprintf('  Rise time: %.4f ms\n', S_d.RiseTime * 1000);
+fprintf('  Overshoot: %.2f%%\n', S_d.Overshoot);
+fprintf('  Settling time: %.4f ms\n', S_d.SettlingTime * 1000);
+
+if S_d.RiseTime > tr_spec
+    fprintf('  WARNING: Rise time exceeds specification!\n');
+end
+if S_d.Overshoot > Mp_spec * 100
+    fprintf('  WARNING: Overshoot exceeds 5%% specification!\n');
+end
+
+%% Part (e): Lag compensator exploration
+fprintf('\n--- Part (e): Lag Compensator ---\n');
+
+sisotool('rlocus', G5);
+
+fprintf('Instructions:\n');
+fprintf('1. In Control System Designer, go to Compensator tab\n');
+fprintf('2. Right-click in Compensator Editor\n');
+fprintf('3. Add "Real Pole" (close to origin)\n');
+fprintf('4. Add "Real Zero" (slightly further from origin than pole)\n');
+fprintf('5. For lag: place pole < zero (both near origin)\n');
+fprintf('6. Observe how lag compensator affects branches:\n');
+fprintf('   - Lag pulls branches SLIGHTLY LEFT\n');
+fprintf('   - Main effect: increases DC gain (reduces steady-state error)\n');
+fprintf('   - Minor effect on transient response if pole/zero close to origin\n');
+
+%% Part (f): Minimum controller gain
+fprintf('\n--- Part (f): Minimum Controller Gain ---\n');
+
+% For C(s) = Kc*(s+z)/(s+p), DC gain = Kc*z/p
+% For 2%% error: 1/(1 + (Kc*z/p)*dcgain(G)) = 0.02
+min_gain_ratio = (1/0.02 - 1) / dcgain(G5);
+
+fprintf('For 2%% steady-state error:\n');
+fprintf('Required: Kc*z/p >= %.2f\n', min_gain_ratio);
+fprintf('\nThis is the minimum DC gain of the compensator.\n');
+
+%% Part (g): Design lag controller
+fprintf('\n--- Part (g): Lag Controller Design ---\n');
+
+% Example design (adjust based on sisotool results)
+z_lag = 50;      % Zero location
+p_lag = 5;       % Pole location (p < z for lag)
+Kc = min_gain_ratio * p_lag / z_lag * 1.05;  % Add 5%% margin
+
+fprintf('Example Lag Compensator:\n');
+fprintf('  Zero (z) = %.2f\n', z_lag);
+fprintf('  Pole (p) = %.2f\n', p_lag);
+fprintf('  Kc = %.4f\n', Kc);
+fprintf('  DC gain (Kc*z/p) = %.2f\n', Kc*z_lag/p_lag);
+
+% Create compensator
+C_lag = tf(Kc * [1, z_lag], [1, p_lag]);
+G_comp = C_lag * G5;
+
+fprintf('\nCompensated System:\n');
+disp(G_comp);
+
+% Closed-loop
+sys_cl_lag = feedback(G_comp, 1);
+poles_cl_lag = pole(sys_cl_lag);
+
+fprintf('Closed-loop poles:\n');
+disp(poles_cl_lag);
+
+% Plot step response
+figure('Name', 'Problem 5g - Lag Compensator Response', 'NumberTitle', 'off');
+step(sys_cl_lag);
+grid on;
+title(sprintf('Step Response with Lag Compensator\n(Kc=%.4f, z=%.2f, p=%.2f)', Kc, z_lag, p_lag));
+xlabel('Time (s)');
+ylabel('Angular Velocity (rad/s)');
+
+% Performance metrics
+S_lag = stepinfo(sys_cl_lag);
+ess_lag = 1 - dcgain(sys_cl_lag);
+
+fprintf('\nPerformance with lag compensator:\n');
+fprintf('  Rise time: %.4f ms (spec: <= %.2f ms)\n', S_lag.RiseTime*1000, tr_spec*1000);
+fprintf('  Overshoot: %.2f%% (spec: <= %.0f%%)\n', S_lag.Overshoot, Mp_spec*100);
+fprintf('  Settling time: %.4f ms\n', S_lag.SettlingTime*1000);
+fprintf('  Steady-state error: %.4f (%.2f%%)\n', ess_lag, ess_lag*100);
+
+% Specification check
+fprintf('\n** Specification Check **\n');
+meets_tr = S_lag.RiseTime <= tr_spec;
+meets_os = S_lag.Overshoot <= Mp_spec * 100;
+meets_ess = ess_lag <= 0.02;
+
+% Root locus with compensator
+figure('Name', 'Problem 5g - Root Locus with Lag', 'NumberTitle', 'off');
+rlocus(G_comp);
+grid on;
+title('Root Locus with Lag Compensator');
+xlabel('Real Axis');
+ylabel('Imaginary Axis');
+sgrid(zeta_min, wn_min);
+
