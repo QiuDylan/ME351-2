@@ -1,7 +1,6 @@
-%% ME351 HW3 - Complete Solutions for Problems 1-5
-% Root Locus Analysis and Design
+%% Problem 5 
 
-fprintf('PROBLEM 5:');
+fprintf('Problem 5:');
 
 % Given parameters
 R = 8.4;                    % Resistance (Ohms)

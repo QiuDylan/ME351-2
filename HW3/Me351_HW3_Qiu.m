@@ -131,7 +131,7 @@ wn_min;
 controlSystemDesigner('rlocus', G5);
 
 %% Part (f): Minimum controller gain
-fprintf('\n--- Part (f): Minimum Controller Gain ---\n');
+fprintf('Part F');
 min_gain_ratio = ((1 - 0.02) / 0.02) / dcgain(G5);
 min_gain_ratio;
 
