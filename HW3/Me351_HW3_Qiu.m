@@ -7,11 +7,11 @@ close all; clc;
 
 fprintf('PROBLEM 1\n');
 % Transfer function: G1(s) = K / (s(s^2+2s+2))
-K = 0.1;
+K = 1 ;
 s = tf('s');
-G1 = K / (s * (s^2 + 2 * s + 2));
+G1 = K  / (s^2 + (4) * s - 32);
 
-%controlSystemDesigner('rlocus', G1)
+controlSystemDesigner('rlocus', G1)
 
 %% PROBLEM 2
 
@@ -109,12 +109,12 @@ den5 = [a2, a1, a0];
 G5 = tf(num5, den5);
 
 fprintf('Transfer Function G(s) = omega(s)/V(s):\n');
-disp(G5);
+%disp(G5);
 
 % Open-loop poles
 poles5 = pole(G5);
 fprintf('Open-Loop Poles:\n');
-disp(poles5);
+%disp(poles5);
 
 % Design specifications
 tr_spec = 0.5e-3;           % Rise time <= 0.5 ms
@@ -128,7 +128,7 @@ wn_min;
 
 %% Part (a)
 
-controlSystemDesigner('rlocus', G5);
+%controlSystemDesigner('rlocus', G5);
 
 %% Part (f): Minimum controller gain
 fprintf('Part F');
