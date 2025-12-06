@@ -99,4 +99,4 @@ ess_comp = 1 / (Kc * kp * 26);
 fprintf('Steady-state error to ramp: %.6f (Required: < 0.01)\n', ess_comp);
 fprintf('SS error spec met: %s\n', string(ess_comp < 0.01));
 
-fprintf('Bandwidth: %.4f rad/s\n', bandwidth(G_lead));
+fprintf('Bandwidth: %.4f rad/s\n', bandwidth(T));

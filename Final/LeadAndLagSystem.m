@@ -31,11 +31,11 @@ zeta_min = sqrt((log(OS_max/100))^2 / (pi^2 + (log(OS_max/100))^2));
 pm = 100 * zeta_min; 
 
 [~, ~, ~, Wcp_uncomp] = margin(P);
-Wcp_comp = 2.5 * Wcp_uncomp; % new crossover frequency
+Wcp_comp = 3 * Wcp_uncomp; % new crossover frequency
 [mag_wcp, phase_wcp] = bode(P, Wcp_comp);
 fprintf('Desired compensated crossover freq: %.4f rad/s\n', Wcp_comp);
 
-p_max = pm - (180 + phase_wcp) + 40; % 40 degree margin for error
+p_max = pm - (180 + phase_wcp) + 30; % 40 degree margin for error
 phi_max = p_max * pi/180; % convert to radians
 alpha = (1 - sin(phi_max))/(1 + sin(phi_max));
 z_lead = Wcp_comp * sqrt(alpha);
@@ -44,13 +44,13 @@ fprintf('mag_wcp: %.4f, phase_wcp: %.4f\n', mag_wcp, phase_wcp);
 Kc = 1 / (mag_wcp * sqrt(alpha));
 fprintf('Compensator gain Kc: %.4f\n', Kc);
 
-z_lag = 2;
-p_lag = 2/100; % for lag 
+z_lag = 4;
+p_lag = z_lag/75; % for lag 
 C_lead = (s + z_lead) / (s + p_lead);
 C_lag  = (s + z_lag)  / (s + p_lag);
 C = Kc * C_lead * C_lag;
 P_comp_comp = P * C;
-controlSystemDesigner(P_comp_comp);
+controlSystemDesigner(P); %Kc = 104.7  zeroes: (s+35) (s+0.06) poles:   (s+165) (s+0.028)
 
 
 fprintf('\nLead and lag Compensator: Gc(s) = %.4f * (s + %.4f)(s + %.4f)/(s + %.4f)(s + %.4f)\n', Kc, z_lead,z_lag, p_lead,p_lag);
